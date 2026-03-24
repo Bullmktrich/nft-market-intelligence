@@ -66,7 +66,7 @@ nft-market-intelligence/
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/nft-market-intelligence.git
+git clone https://github.com/Bullmktrich/nft-market-intelligence.git
 cd nft-market-intelligence
 ```
 
