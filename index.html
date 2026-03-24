@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NFT Market Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080c0f;
+    --surface: #0d1317;
+    --border: rgba(255,255,255,0.07);
+    --accent: #00e8b5;
+    --accent2: #0af;
+    --text: #e8edf0;
+    --muted: #6b7a82;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* grid overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,232,181,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,232,181,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 1.25rem 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,12,15,0.85);
+    backdrop-filter: blur(12px);
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  /* hero */
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 8rem 2.5rem 4rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .hero-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero-label::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  h1 {
+    font-family: var(--sans);
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+  }
+
+  h1 span {
+    color: var(--accent);
+    display: block;
+  }
+
+  .hero-desc {
+    font-size: 1.1rem;
+    color: var(--muted);
+    max-width: 520px;
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+  }
+
+  .cta-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.75rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+    font-weight: 500;
+  }
+  .btn-primary:hover { background: #00ffc8; transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.04); }
+
+  /* stats ticker */
+  .ticker {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+    padding: 0.85rem 0;
+  }
+
+  .ticker-track {
+    display: flex;
+    gap: 3rem;
+    animation: scroll 30s linear infinite;
+    white-space: nowrap;
+  }
+
+  .ticker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  .ticker-name { color: var(--muted); }
+  .ticker-val { color: var(--text); }
+  .ticker-up { color: var(--accent); }
+  .ticker-down { color: #f05; }
+  .ticker-dot { color: var(--border); }
+
+  @keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* features */
+  section {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 5rem 2.5rem;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 3rem;
+    color: var(--text);
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .feature {
+    background: var(--surface);
+    padding: 2rem;
+    transition: background 0.2s;
+  }
+  .feature:hover { background: #111820; }
+
+  .feature-icon {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-desc {
+    font-size: 0.875rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* code block */
+  .code-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .code-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .code-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .code-filename {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 6px;
+  }
+
+  pre {
+    padding: 1.5rem;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+    color: var(--text);
+  }
+
+  .kw { color: #c792ea; }
+  .fn { color: var(--accent2); }
+  .str { color: var(--accent); }
+  .cm { color: var(--muted); }
+  .var { color: #ffcb6b; }
+
+  /* endpoints table */
+  .endpoints {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 13px;
+    margin-top: 2rem;
+  }
+
+  .endpoints th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .endpoints td {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+  }
+
+  .endpoints tr:last-child td { border-bottom: none; }
+  .endpoints tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .method {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+
+  .get { background: rgba(0,232,181,0.12); color: var(--accent); border: 1px solid rgba(0,232,181,0.2); }
+  .ws  { background: rgba(0,170,255,0.12); color: var(--accent2); border: 1px solid rgba(0,170,255,0.2); }
+
+  .ep-path { color: var(--muted); font-size: 12px; }
+
+  /* footer */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 2rem 2.5rem;
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  footer p {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 6px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* animate in */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.6s ease forwards;
+  }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.35s; }
+  .delay-4 { animation-delay: 0.5s; }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">// nft-market-intelligence</span>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#api">API</a></li>
+    <li><a href="https://github.com/YOUR_USERNAME/nft-market-intelligence">GitHub ↗</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <p class="hero-label fade-up">OpenSea API · Research Tool</p>
+  <h1 class="fade-up delay-1">NFT Market<span>Intelligence</span></h1>
+  <p class="hero-desc fade-up delay-2">
+    Real-time collection stats, floor price tracking, and sales event monitoring — built on the OpenSea V2 API. A personal analytics tool for research and market awareness.
+  </p>
+  <div class="cta-group fade-up delay-3">
+    <a href="https://github.com/YOUR_USERNAME/nft-market-intelligence" class="btn btn-primary">
+      View on GitHub →
+    </a>
+    <a href="https://docs.opensea.io/reference/api-overview" class="btn btn-ghost">
+      OpenSea API Docs
+    </a>
+  </div>
+</div>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-track" id="ticker">
+    <span class="ticker-item"><span class="ticker-name">PUDGY PENGUINS</span><span class="ticker-val">Ξ 11.2</span><span class="ticker-up">▲ 4.2%</span></span>
+    <span class="ticker-dot">·</span>
+    <span class="ticker-item"><span class="ticker-name">CRYPTOPUNKS</span><span class="ticker-val">Ξ 26.9</span><span class="ticker-down">▼ 1.1%</span></span>
+    <span class="ticker-dot">·</span>
+    <span class="ticker-item"><span class="ticker-name">AZUKI</span><span class="ticker-val">Ξ 8.4</span><span class="ticker-up">▲ 9.7%</span></span>
+    <span class="ticker-dot">·</span>
+    <span class="ticker-item"><span class="ticker-name">BAYC</span><span class="ticker-val">Ξ 7.8</span><span class="ticker-down">▼ 2.3%</span></span>
+    <span class="ticker-dot">·</span>
+    <span class="ticker-item"><span class="ticker-name">DOODLES</span><span class="ticker-val">Ξ 2.1</span><span class="ticker-up">▲ 6.1%</span></span>
+    <span class="ticker-dot">·</span>
+    <span class="ticker-item"><span class="ticker-name">MILADY MAKER</span><span class="ticker-val">Ξ 3.3</span><span class="ticker-up">▲ 12.4%</span></span>
+    <span class="ticker-dot">·</span>
+    <span class="ticker-item"><span class="ticker-name">LIL PUDGYS</span><span class="ticker-val">Ξ 1.6</span><span class="ticker-up">▲ 1.8%</span></span>
+    <span class="ticker-dot">·</span>
+    <!-- duplicate for seamless loop -->
+    <span class="ticker-item"><span class="ticker-name">PUDGY PENGUINS</span><span class="ticker-val">Ξ 11.2</span><span class="ticker-up">▲ 4.2%</span></span>
+    <span class="ticker-dot">·</span>
+    <span class="ticker-item"><span class="ticker-name">CRYPTOPUNKS</span><span class="ticker-val">Ξ 26.9</span><span class="ticker-down">▼ 1.1%</span></span>
+    <span class="ticker-dot">·</span>
+    <span class="ticker-item"><span class="ticker-name">AZUKI</span><span class="ticker-val">Ξ 8.4</span><span class="ticker-up">▲ 9.7%</span></span>
+    <span class="ticker-dot">·</span>
+    <span class="ticker-item"><span class="ticker-name">BAYC</span><span class="ticker-val">Ξ 7.8</span><span class="ticker-down">▼ 2.3%</span></span>
+    <span class="ticker-dot">·</span>
+    <span class="ticker-item"><span class="ticker-name">DOODLES</span><span class="ticker-val">Ξ 2.1</span><span class="ticker-up">▲ 6.1%</span></span>
+    <span class="ticker-dot">·</span>
+    <span class="ticker-item"><span class="ticker-name">MILADY MAKER</span><span class="ticker-val">Ξ 3.3</span><span class="ticker-up">▲ 12.4%</span></span>
+    <span class="ticker-dot">·</span>
+    <span class="ticker-item"><span class="ticker-name">LIL PUDGYS</span><span class="ticker-val">Ξ 1.6</span><span class="ticker-up">▲ 1.8%</span></span>
+    <span class="ticker-dot">·</span>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <p class="section-label">Capabilities</p>
+  <h2 class="section-title">What it tracks</h2>
+  <div class="features-grid">
+    <div class="feature">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">Collection Stats</div>
+      <div class="feature-desc">Floor price, 24h/7d/30d volume, number of owners, total supply — refreshed on a configurable schedule.</div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Live Event Stream</div>
+      <div class="feature-desc">WebSocket listener for real-time listings, offers, sales, and transfers on any OpenSea-indexed collection.</div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔍</div>
+      <div class="feature-title">NFT Metadata</div>
+      <div class="feature-desc">Fetch token-level data by contract address and token ID across all OpenSea-supported chains.</div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📁</div>
+      <div class="feature-title">Data Export</div>
+      <div class="feature-desc">Snapshot collections to CSV or local SQLite — useful for charting, backtesting, or offline research.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CODE EXAMPLE -->
+<section id="api">
+  <p class="section-label">Usage</p>
+  <h2 class="section-title">Start querying in minutes</h2>
+  <div class="code-section">
+    <div class="code-bar">
+      <div class="code-dot"></div>
+      <div class="code-dot"></div>
+      <div class="code-dot"></div>
+      <span class="code-filename">src/client.py</span>
+    </div>
+    <pre><span class="cm"># Fetch collection stats from OpenSea V2</span>
+<span class="kw">import</span> <span class="var">httpx</span>
+<span class="kw">from</span> <span class="var">os</span> <span class="kw">import</span> <span class="var">environ</span>
+
+<span class="kw">class</span> <span class="fn">OpenSeaClient</span>:
+    <span class="var">base</span> = <span class="str">"https://api.opensea.io/api/v2"</span>
+
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="var">self</span>):
+        <span class="var">self</span>.headers = {
+            <span class="str">"x-api-key"</span>: environ.get(<span class="str">"OPENSEA_API_KEY"</span>, <span class="str">""</span>),
+            <span class="str">"accept"</span>: <span class="str">"application/json"</span>
+        }
+
+    <span class="kw">def</span> <span class="fn">get_collection_stats</span>(<span class="var">self</span>, <span class="var">slug</span>: <span class="var">str</span>):
+        <span class="var">res</span> = httpx.get(
+            <span class="str">f"{self.base}/collections/{slug}/stats"</span>,
+            headers=<span class="var">self</span>.headers
+        )
+        <span class="var">res</span>.raise_for_status()
+        <span class="kw">return</span> <span class="var">res</span>.json()
+
+<span class="cm"># Usage</span>
+<span class="var">client</span> = <span class="fn">OpenSeaClient</span>()
+<span class="var">stats</span> = <span class="var">client</span>.<span class="fn">get_collection_stats</span>(<span class="str">"pudgy-penguins"</span>)
+<span class="fn">print</span>(<span class="var">stats</span>[<span class="str">"total"</span>][<span class="str">"floor_price"</span>])  <span class="cm"># → 11.2</span></pre>
+  </div>
+
+  <!-- ENDPOINTS TABLE -->
+  <table class="endpoints">
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th>Endpoint</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td class="ep-path">/collections/{slug}/stats</td>
+        <td>Floor price, volume, owners, supply</td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td class="ep-path">/events/collection/{slug}</td>
+        <td>Sales and listing history</td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td class="ep-path">/nfts/{chain}/{address}/{id}</td>
+        <td>Token-level metadata</td>
+      </tr>
+      <tr>
+        <td><span class="method get">GET</span></td>
+        <td class="ep-path">/collections/{slug}</td>
+        <td>Collection details and contract info</td>
+      </tr>
+      <tr>
+        <td><span class="method ws">WS</span></td>
+        <td class="ep-path">wss://stream.openseabeta.com/socket</td>
+        <td>Real-time events feed</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p><span class="status-dot"></span>Personal research project — not affiliated with OpenSea</p>
+  <p>Built to apply for <a href="https://docs.opensea.io/reference/api-keys">OpenSea API access</a> · <a href="https://github.com/YOUR_USERNAME/nft-market-intelligence">GitHub ↗</a></p>
+</footer>
+
+</body>
+</html>
